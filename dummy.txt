@@ -1,4 +1,2 @@
-this text changed for devoleper (developer) 
-so that only i can check where it is using in devoleper or in main
-now this file change for pull 
+everything completed now going to push this full file from local to git hub
 
