@@ -1,2 +1,2 @@
-everything completed now going to push this full file from local to git hub
+everything completed now going to pull this full file from git hub to local
 
