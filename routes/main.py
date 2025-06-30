@@ -184,8 +184,7 @@ def get_by_id(user_name:str ,current_user:models.User=Depends(get_current_user),
 @app.put("/update_user", response_model=schemas.UserOut)
 def update_user(
     updated_data: schemas.UserUpdate, current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+    db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == current_user.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
