@@ -58,30 +58,44 @@ app.openapi = custom_openapi
 
 
 
-@app.post("/register/", response_model=schemas.UserOut)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),background_tasks:BackgroundTasks=None):
-    existing_user=db.query(models.User).filter(models.User.email==user.email).first()
-    if  existing_user:
-        raise HTTPException(status_code=409,detail="email already registered try another email")
+# @app.post("/register/", response_model=schemas.UserOut)
+# def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),background_tasks:BackgroundTasks=None):
+#     existing_user=db.query(models.User).filter(models.User.email==user.email).first()
+#     if  existing_user:
+#         raise HTTPException(status_code=409,detail="email already registered try another email")
     
-    hashed_pw=hash_password(user.password)
-    otp=generate_otp()
+#     hashed_pw=hash_password(user.password)
+#     otp=generate_otp()
 
 
-    db_user = models.User(name=user.name,email=user.email,password=hashed_pw,otp=otp)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    background_tasks.add_task(sent_otp__email,user.email,otp)
-    return {
-    "name": db_user.name,
-    "email": db_user.email,
+#     db_user = models.User(name=user.name,email=user.email,password=hashed_pw,otp=otp)
+#     db.add(db_user)
+#     db.commit()
+#     db.refresh(db_user)
+#     background_tasks.add_task(sent_otp__email,user.email,otp)
+#     return {
+#     "name": db_user.name,
+#     "email": db_user.email,
     
-}
+# }
+
+# @app.post("/register",response_model=schemas.UserOut)
+# def create_user(user:schemas.UserCreate,background_tasks:BackgroundTasks,
+#                 db:Session=Depends(get_db)):
+#     existing_user=db.query(models.User).filter(models.User.email==user.email).first()
+#     if existing_user:
+#         raise HTTPException(status_code=404,detail="Email already registered")
+#     hashpwd=hash_password(user.password)
+#     otp=generate_otp()
+#     db_user=models.User(name=user.name,email=user.email,password=hashpwd,otp=otp)
+#     db.add(db_user)
+#     db.commit()  
+#     db.refresh(db_user)
+#     background_tasks.add_task(sent_otp__email,user.email,otp)
+#     return db_user 
 
 @app.post("/register",response_model=schemas.UserOut)
-def create_user(user:schemas.UserCreate,background_tasks:BackgroundTasks,
-                db:Session=Depends(get_db)):
+def create_user(user:schemas.UserCreate,background_tasks:BackgroundTasks,db:Session=Depends(get_db)):
     existing_user=db.query(models.User).filter(models.User.email==user.email).first()
     if existing_user:
         raise HTTPException(status_code=404,detail="Email already registered")
@@ -89,10 +103,11 @@ def create_user(user:schemas.UserCreate,background_tasks:BackgroundTasks,
     otp=generate_otp()
     db_user=models.User(name=user.name,email=user.email,password=hashpwd,otp=otp)
     db.add(db_user)
-    db.commit()  
+    db.commit()
     db.refresh(db_user)
     background_tasks.add_task(sent_otp__email,user.email,otp)
-    return db_user 
+    return db_user
+
 
 
 
@@ -110,17 +125,29 @@ def create_user(user:schemas.UserCreate,background_tasks:BackgroundTasks,
 #     db.commit()
 #     return {"message": "Email verified successfully"}
 
-@app.post("/verify_otp")
+# @app.post("/verify_otp")
+# def verify_otp(email:EmailStr,otp:str,db:Session=Depends(get_db)):
+#     user=db.query(models.User).filter(models.User.email==email).first()
+#     if not user:
+#         raise HTTPException(status_code=404,detail="invalid email")
+#     if user.otp!=otp:
+#         raise HTTPException(status_code=404,detail="otp incorrect")
+#     user.is_verified=True
+#     user.otp=None
+#     db.commit()
+#     return{"message":"Email verification completed successfully"}
+
+@app.post("/verify otp")
 def verify_otp(email:EmailStr,otp:str,db:Session=Depends(get_db)):
     user=db.query(models.User).filter(models.User.email==email).first()
     if not user:
         raise HTTPException(status_code=404,detail="invalid email")
-    if user.otp!=otp:
-        raise HTTPException(status_code=404,detail="otp incorrect")
+    if otp !=otp:
+        raise HTTPException(status_code=404,detail="invalid otp")
     user.is_verified=True
     user.otp=None
     db.commit()
-    return{"message":"Email verification completed successfully"}
+    return {"message":f"Email verification is completed successfully for {user.name} "}
     
 
 @app.post("/login",response_model=Token)
@@ -174,7 +201,7 @@ def get_by_id(user_id:int ,current_user:models.User=Depends(get_current_user),
     return user
 
 @app.get("/get_by_name",response_model=schemas.UserOut)
-def get_by_id(user_name:str ,current_user:models.User=Depends(get_current_user),
+def get_by_name(user_name:str ,current_user:models.User=Depends(get_current_user),
               db:Session=Depends(get_db)):
     user=db.query(models.User).filter(models.User.name==user_name).first()
     if not user:
@@ -182,8 +209,7 @@ def get_by_id(user_name:str ,current_user:models.User=Depends(get_current_user),
     return user
 
 @app.put("/update_user", response_model=schemas.UserOut)
-def update_user(
-    updated_data: schemas.UserUpdate, current_user: models.User = Depends(get_current_user),
+def update_user(updated_data: schemas.UserUpdate, current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == current_user.email).first()
     if not user:
@@ -208,9 +234,7 @@ def update_user(
 # def get_all_users(db:Session=Depends(get_db)):
 #     return db.query(models.User).all()
 @app.delete("/delete_user")
-def delete_user(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)):
+def delete_user(current_user: models.User = Depends(get_current_user),db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == current_user.email).first()
    
     if not user:
