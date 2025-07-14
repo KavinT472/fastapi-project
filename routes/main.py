@@ -142,7 +142,7 @@ def verify_otp(email:EmailStr,otp:str,db:Session=Depends(get_db)):
     user=db.query(models.User).filter(models.User.email==email).first()
     if not user:
         raise HTTPException(status_code=404,detail="invalid email")
-    if otp !=otp:
+    if user.otp !=otp:
         raise HTTPException(status_code=404,detail="invalid otp")
     user.is_verified=True
     user.otp=None
